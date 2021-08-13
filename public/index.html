@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat &bull; Socket.io</title>
+    <script src="https://code.jquery.com/jquery-3.1.0.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"></script>    
+    <style>
+    *{
+        box-sizing:border-box;        
+        font-family: Arial, Helvetica, sans-serif;
+        outline: none;
+    }
+      body{
+        background-color:#3EC699;
+        margin:0px; padding:40px 0px;
+        
+        text-align:center;
+      }
+      h1{
+        font-size:25px;
+        font-family:'Helvetica',sans-serif;
+        color:#333; margin:0px 0px 20px 0px;
+      }
+      h2{
+        font-size:20px;
+        font-family:'Helvetica',sans-serif;
+        border-radius:6px; background:#3EC699;
+        padding: 6px;color:#fff;
+      }
+      .texto{
+          font-size:18px;
+          font-family:'Helvetica',sans-serif;
+          color:#999;
+      }
+      .containner{
+        text-align: left;
+        margin:0px auto;
+        max-width:420px;
+        height:auto;
+        padding:30px;
+        border-radius:6px;
+        box-shadow:0px 0px 8px rgba(0,0,0,0.3);
+        background:#fff;
+      }
+      .mensagens{
+          padding:10px;
+          border-radius: 6px;
+          width: 100%;
+          height: 350px;
+          border:2px solid #ccc;
+          margin-bottom: 20px;
+          overflow-y:scroll;
+          display:flex;
+          flex-direction: column;         
+      }
+      .msg{        
+        font-size: 14px;
+        padding: 6px 10px;
+        margin-bottom: 5px;        
+        display: block;
+        
+      }
+      .msg-parent{
+        align-self: flex-start;
+        color: #333;
+        background-color: #efefef;
+        border-radius: 0px 10px 10px 10px; 
+      }
+      .msg-self{
+        align-self: flex-end;
+        color: #333;
+        background-color: #cbf7e8;
+        border-radius: 10px 0px 10px 10px;        
+      }
+      input{
+          padding:10px;
+          border-radius: 6px;
+          width: 100%;
+          border:2px solid #ccc;
+          margin-bottom: 10px;
+      }
+      .input-empty::-webkit-input-placeholder {
+        color: #ff6262;
+      }
+      button{
+        padding:10px;
+        border-radius: 6px;
+        width: 100%;
+        color: #fff;
+        font-size: 14px;
+        background-color: #3EC699;
+        border:1px solid  #3EC699;
+      }
+    </style>
+</head>
+<body>
+
+    <div class="containner">
+        <h1>Chat &bull; Socket.io</h1>      
+        <form id="chat">
+            <div class="mensagens"></div>
+            <input type="text" name="usuario" placeholder="Digite seu nome..."/>
+            <input type="text" id="mensagem" name="mensagem" placeholder="Digite uma mensagem..."/>
+            <button id="send" type="button">Enviar</button>
+        </form>
+    </div>
+
+    <script type="text/javascript">
+    $(document).ready(function(){
+      var socket = io('http://localhost:3000');
+
+      function listaMsg(msg,usuario){
+        let tipo = usuario;
+        let chat = $('.mensagens');
+        // console.log($('.mensagens').scrollTop());
+        // console.log($('.mensagens').height());
+        // let chat = $('.mensagens');
+        chat.append(`<div class="msg msg-${tipo  ? 'self' : 'parent'}">
+          <strong>${msg.usuario}</strong><br>
+          ${msg.mensagem}</div>`);             
+          $('.mensagens').animate({scrollTop:chat.prop("scrollHeight")},500);            
+      }    
+
+      socket.on('mensagensAnteriores',function(mensagens){
+        for(mensagem of mensagens){
+          listaMsg(mensagem);
+        }
+      });
+
+      socket.on('mensagemRecebida',function(mensagem){
+        listaMsg(mensagem);
+      })
+
+      function submitMsg(){
+        var usuario = $('input[name=usuario]').val();
+          var mensagem = $('input[name=mensagem]').val();
+
+          if(usuario.length && mensagem.length){
+            var msgObj = {
+                usuario:usuario,
+                mensagem:mensagem
+            }
+
+            listaMsg(msgObj,usuario);            
+            socket.emit('enviaMensagem',msgObj); 
+            $('#mensagem').val('');                
+          }
+      }
+
+      function verifyFormEmpty(){
+        let usuario = $('input[name=usuario]');
+        let mensagem = $('input[name=mensagem]');
+
+        if(usuario.val() == ""){
+          usuario.addClass('input-empty').css('border-color','#ff6262');
+        }else{
+          usuario.removeClass('input-empty').css('border-color','#cccccc');
+        }
+        if(mensagem.val() == ""){
+          mensagem.addClass('input-empty').css('border-color','#ff6262');
+        }else{
+          mensagem.removeClass('input-empty').css('border-color','#cccccc');
+        }
+      }
+          
+      $(document).on('keypress',(e)=>{
+      if(e.which == 13){  
+        e.preventDefault();
+        verifyFormEmpty();   
+        submitMsg();
+      }    
+
+      });
+
+      $('#send').click(function(e){
+          e.preventDefault();
+            verifyFormEmpty();
+            submitMsg();         
+        }); 
+
+    });
+    </script>
+</body>
+</html>
